@@ -1,0 +1,5 @@
+/audit
+*.json
+!internal/**/*.json
+*.html
+.DS_Store

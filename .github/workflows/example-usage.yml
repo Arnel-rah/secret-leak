@@ -1,0 +1,26 @@
+# Example: drop this into ANY other repository to gate pull requests on
+# leaked secrets. Copy this file to that repo's .github/workflows/ and it
+# will build+run the auditor from this repo as a reusable action-less step.
+name: Secrets Leak Audit (example for consumers)
+
+on:
+  pull_request:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repo (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Install secrets-leak-auditor
+        run: go install github.com/Arnel-rah/secrets-leak-auditor/cmd/audit@latest
+
+      - name: Run audit
+        run: audit --repo . --no-color --ci --fail-on high
