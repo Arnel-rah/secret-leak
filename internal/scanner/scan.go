@@ -2,7 +2,6 @@ package scanner
 
 import "fmt"
 
-// Finding is a single detected secret, ready for reporting.
 type Finding struct {
 	RuleID      string   `json:"rule_id"`
 	Description string   `json:"description"`
@@ -16,15 +15,12 @@ type Finding struct {
 	Remediation string   `json:"remediation"`
 }
 
-// ScanOptions controls what a Scan does.
 type ScanOptions struct {
 	RepoPath       string
 	IncludeEntropy bool
 }
 
-// Scan walks the full reachable Git history of RepoPath and returns every
-// secret-like finding from both named rules and (optionally) generic
-// high-entropy token detection.
+
 func Scan(opts ScanOptions) ([]Finding, error) {
 	added, err := WalkAddedLines(opts.RepoPath)
 	if err != nil {
@@ -82,8 +78,6 @@ func shortHash(h string) string {
 	return h
 }
 
-// redact keeps the first 4 and last 4 characters of a matched secret and
-// masks the middle, so reports can be shared without re-leaking the secret.
 func redact(s string) string {
 	if len(s) <= 10 {
 		return "****"

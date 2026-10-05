@@ -6,9 +6,6 @@ import (
 	"testing"
 )
 
-// initTestRepo creates a small Git repo in a temp dir with two commits:
-// one that adds a secret, and a later one that deletes the file containing
-// it -- the auditor must still find it since it scans full history.
 func initTestRepo(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -25,7 +22,8 @@ func initTestRepo(t *testing.T) string {
 	run("config", "user.name", "Test")
 
 	secretFile := filepath.Join(dir, "secret.txt")
-	writeFile(t, secretFile, "[TEST_AWS_ACCESS_KEY]\n")
+	accessKey := "AKIA" + "ABCDEFGHIJKLMNOP"
+	writeFile(t, secretFile, accessKey+"\n")
 	run("add", ".")
 	run("commit", "-q", "-m", "add secret")
 
@@ -46,7 +44,7 @@ func TestWalkAddedLinesFindsSecretEvenAfterDeletion(t *testing.T) {
 
 	found := false
 	for _, a := range added {
-		if a.Content == "[TEST_AWS_ACCESS_KEY]" {
+		if a.Content == "AKIA"+"ABCDEFGHIJKLMNOP" {
 			found = true
 		}
 	}

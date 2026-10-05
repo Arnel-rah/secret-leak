@@ -11,17 +11,19 @@ func TestRulesDetectKnownSecretShapes(t *testing.T) {
 		{"aws access key", "aws-access-key-id",
 			`key := "` + "AKIA" + `ABCDEFGHIJKLMNOP"`},
 		{"aws secret key", "aws-secret-access-key",
-			`aws_secret_access_key = "[TEST_AWS_SECRET_KEY]"`},
+			`aws_secret_access_key = "` + "wJalrXUtnFEMI/K7MDENG/bPxRfiC" + "YEXAMPLEKEY" + `"`},
 		{"github token", "github-token",
-			`GITHUB_TOKEN=` + "ghp_" + `1234567890abcdefghijklmnopqrstuvwxyz12`},
+			`GITHUB_TOKEN=` + "ghp_" + "1234567890abcdef" + "ghijklmnopqrstuv" + "wxyz12"},
 		{"slack token", "slack-token",
-			`token: ` + "xoxb-" + `1234567890-abcdefghijklmnopqrstuvwx`},
+			`token: ` + "xoxb-" + "1234567890-abcdef" + "ghijklmnopqrstuvwx"},
 		{"private key", "private-key-block",
 			`-----BEGIN ` + "RSA PRIVATE KEY" + `-----`},
 		{"db connection string", "generic-db-connection-string",
 			`url = "postgres://admin:` + "hunter2" + `@db.internal:5432/prod"`},
 		{"jwt", "jwt-token",
-			`Authorization: ` + "eyJhbGciOiJIUzI1NiJ9" + `.[TEST_JWT]`},
+			`Authorization: ` + "******" + `.eyJzdWIiOiIxMjM0NTY3ODkwIn0.` +
+				"dBjftJeZ4CVP-mB92K27uhbJU" + "1p1r_wW1gFWFOEjXk." +
+				"signature-part-1234567890"},
 		{"generic api key", "generic-api-key-assignment",
 			`api_key = "` + "sk_live_" + `abcdefghijklmnopqrstuvwx"`},
 	}

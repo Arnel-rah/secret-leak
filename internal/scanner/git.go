@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-// AddedLine represents one line added in some commit's diff, with enough
-// context to report and remediate it.
 type AddedLine struct {
 	CommitHash   string
 	CommitDate   string
@@ -21,11 +19,6 @@ type AddedLine struct {
 
 var diffGitRe = "diff --git a/"
 
-// WalkAddedLines runs `git log --all -p` over repoPath and yields every line
-// that was *added* in any commit on any reachable branch, including commits
-// that were later reverted or force-pushed over locally — this is what lets
-// the auditor catch secrets that were committed and then "removed" in a
-// later commit (removal does not erase it from history).
 func WalkAddedLines(repoPath string) ([]AddedLine, error) {
 	cmd := exec.Command("git", "-C", repoPath, "log", "--all", "-p",
 		"--no-color", "--no-renames", "--pretty=format:@@COMMIT@@%H@@%aI@@%an")
@@ -58,8 +51,6 @@ func WalkAddedLines(repoPath string) ([]AddedLine, error) {
 		switch {
 		case strings.HasPrefix(line, "@@COMMIT@@"):
 			parts := strings.SplitN(line, "@@", 4)
-			// parts: ["", "COMMIT", hash@@date@@author] -- SplitN with "@@" sep
-			// Simpler: re-split manually.
 			rest := strings.TrimPrefix(line, "@@COMMIT@@")
 			fields := strings.SplitN(rest, "@@", 3)
 			if len(fields) == 3 {
@@ -68,18 +59,15 @@ func WalkAddedLines(repoPath string) ([]AddedLine, error) {
 			_ = parts
 
 		case strings.HasPrefix(line, diffGitRe):
-			// diff --git a/path b/path
 			trimmed := strings.TrimPrefix(line, diffGitRe)
 			if idx := strings.Index(trimmed, " b/"); idx != -1 {
 				curFile = trimmed[:idx]
 			}
 
 		case strings.HasPrefix(line, "@@ "):
-			// Hunk header: @@ -a,b +c,d @@ ...
 			newFileLine = parseHunkNewStart(line)
 
 		case strings.HasPrefix(line, "+++") || strings.HasPrefix(line, "---"):
-			// file marker lines, ignore
 
 		case strings.HasPrefix(line, "+"):
 			content := strings.TrimPrefix(line, "+")
@@ -94,10 +82,8 @@ func WalkAddedLines(repoPath string) ([]AddedLine, error) {
 			newFileLine++
 
 		case strings.HasPrefix(line, "-"):
-			// removed line, doesn't advance new-file line counter
 
 		default:
-			// context line in a hunk advances the new-file counter too
 			if newFileLine > 0 {
 				newFileLine++
 			}
@@ -114,8 +100,6 @@ func WalkAddedLines(repoPath string) ([]AddedLine, error) {
 	return lines, nil
 }
 
-// parseHunkNewStart extracts the starting line number of the "new" side of a
-// unified diff hunk header, e.g. "@@ -12,3 +15,4 @@ func foo() {" -> 15.
 func parseHunkNewStart(header string) int {
 	plusIdx := strings.Index(header, "+")
 	if plusIdx == -1 {

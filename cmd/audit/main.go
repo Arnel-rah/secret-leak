@@ -1,6 +1,4 @@
-// Command audit scans the full Git history of a repository for leaked
-// secrets (API keys, tokens, private keys, credentials) and reports them
-// with severity and remediation guidance.
+
 package main
 
 import (
