@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Arnel-rah/secrets-leak-auditor/internal/scanner"
+	"github.com/Arnel-rah/secret-leak/internal/scanner"
 )
 
 const (
@@ -34,7 +34,6 @@ var severityColor = map[scanner.Severity]string{
 	scanner.SeverityLow:      colorGray,
 }
 
-// SortFindings orders findings by severity (most severe first), then file.
 func SortFindings(findings []scanner.Finding) {
 	sort.SliceStable(findings, func(i, j int) bool {
 		if severityOrder[findings[i].Severity] != severityOrder[findings[j].Severity] {
@@ -44,7 +43,6 @@ func SortFindings(findings []scanner.Finding) {
 	})
 }
 
-// PrintCLI writes a human-readable, colorized report to stdout.
 func PrintCLI(findings []scanner.Finding, noColor bool) {
 	c := func(code string) string {
 		if noColor {
@@ -79,7 +77,6 @@ func PrintCLI(findings []scanner.Finding, noColor bool) {
 		summary[scanner.SeverityMedium], summary[scanner.SeverityLow])
 }
 
-// WriteJSON writes findings as a JSON array to path.
 func WriteJSON(findings []scanner.Finding, path string) error {
 	f, err := os.Create(path)
 	if err != nil {
@@ -92,7 +89,6 @@ func WriteJSON(findings []scanner.Finding, path string) error {
 	return enc.Encode(findings)
 }
 
-// WriteHTML writes a minimal, self-contained HTML report to path.
 func WriteHTML(findings []scanner.Finding, path string) error {
 	var b strings.Builder
 	b.WriteString(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">`)
@@ -126,7 +122,6 @@ func WriteHTML(findings []scanner.Finding, path string) error {
 	return os.WriteFile(path, []byte(b.String()), 0o644)
 }
 
-// HighestSeverity returns the most severe severity present, or "" if none.
 func HighestSeverity(findings []scanner.Finding) scanner.Severity {
 	best := -1
 	var bestSev scanner.Severity

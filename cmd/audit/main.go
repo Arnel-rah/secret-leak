@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Arnel-rah/secrets-leak-auditor/internal/report"
-	"github.com/Arnel-rah/secrets-leak-auditor/internal/scanner"
+	"github.com/Arnel-rah/secret-leak/internal/report"
+	"github.com/Arnel-rah/secret-leak/internal/scanner"
 )
 
 func main() {

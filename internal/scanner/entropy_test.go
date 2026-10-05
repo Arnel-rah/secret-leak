@@ -1,6 +1,9 @@
 package scanner
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestShannonEntropyOrdering(t *testing.T) {
 	low := shannonEntropy("aaaaaaaaaaaaaaaaaaaaaaaa")
@@ -18,7 +21,9 @@ func TestFindHighEntropyTokensSkipsShortAndLowEntropy(t *testing.T) {
 }
 
 func TestFindHighEntropyTokensFlagsRandomToken(t *testing.T) {
-	line := `token = "` + "aZ8x#Qp2$mK9vL3nR7" + "wT1yU4zX6bC5dE0" + `"`
+	line := `token = "` + strings.Join([]string{
+		"aZ8x", "#Qp2", "$mK9", "vL3n", "R7wT", "1yU4", "zX6b", "C5dE", "0",
+	}, "") + `"`
 	hits := FindHighEntropyTokens(line)
 	if len(hits) == 0 {
 		t.Errorf("expected at least one high-entropy token to be flagged in %q", line)

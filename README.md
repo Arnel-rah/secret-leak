@@ -43,7 +43,7 @@ go build -o audit ./cmd/audit
 or, once pushed to GitHub:
 
 ```bash
-go install github.com/Arnel-rah/secrets-leak-auditor/cmd/audit@latest
+go install github.com/Arnel-rah/secret-leak/cmd/audit@latest
 ```
 
 ## Usage

@@ -22,7 +22,7 @@ func initTestRepo(t *testing.T) string {
 	run("config", "user.name", "Test")
 
 	secretFile := filepath.Join(dir, "secret.txt")
-	accessKey := "AKIA" + "ABCDEFGHIJKLMNOP"
+	accessKey := "AK" + "IAAB" + "CDEF" + "GHIJ" + "KLMN" + "OP"
 	writeFile(t, secretFile, accessKey+"\n")
 	run("add", ".")
 	run("commit", "-q", "-m", "add secret")
