@@ -126,6 +126,36 @@ self-audit and
 [.github/workflows/example-usage.yml](.github/workflows/example-usage.yml) for
 the reusable consumer example.
 
+## Automated organization scans
+
+The workflow
+[`.github/workflows/organization-audit.yml`](.github/workflows/organization-audit.yml)
+can scan a configured list of repositories every day and send an email when
+findings reach the configured threshold.
+
+Before enabling it, configure these repository-level settings. The workflow
+discovers all non-archived repositories accessible to the audit token,
+including repositories owned by or accessible through organizations.
+
+| Setting | Type | Example |
+| --- | --- | --- |
+| `ALERT_EMAIL` | Variable | `sadiarnel145@gmail.com` |
+| `GH_AUDIT_TOKEN` | Secret | Fine-grained token with read access to all target repositories |
+| `SMTP_HOST` | Secret | `smtp.gmail.com` |
+| `SMTP_PORT` | Secret | `587` |
+| `SMTP_USERNAME` | Secret | `sadiarnel145@gmail.com` |
+| `SMTP_PASSWORD` | Secret | Gmail app password |
+
+For Gmail, enable two-step verification and create an **app password** for
+the workflow. Store that generated 16-character password as the
+`SMTP_PASSWORD` GitHub Actions secret; never commit it to the repository.
+
+Create `GH_AUDIT_TOKEN` as a fine-grained token with **Metadata: Read-only** and
+**Contents: Read-only** access for every organization and repository that
+should be scanned. The token owner must also be allowed to access those
+organizations. Reports are uploaded as redacted artifacts and are retained for
+30 days.
+
 ## When a secret is found
 
 1. **Revoke or rotate it immediately.** Treat a committed credential as

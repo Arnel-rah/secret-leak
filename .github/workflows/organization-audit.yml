@@ -1,0 +1,141 @@
+name: Organization Secret Audit
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AUDITOR_VERSION: v0.1.0
+  FAIL_ON: high
+
+jobs:
+  discover:
+    name: Discover accessible repositories
+    runs-on: ubuntu-latest
+    outputs:
+      repositories: ${{ steps.repositories.outputs.repositories }}
+    steps:
+      - name: Discover repositories across organizations
+        id: repositories
+        env:
+          GH_TOKEN: ${{ secrets.GH_AUDIT_TOKEN }}
+        run: |
+          repositories="$(gh api --paginate \
+            -H 'Accept: application/vnd.github+json' \
+            '/user/repos?affiliation=owner,collaborator,organization_member&per_page=100' \
+            --jq '.[] | select(.archived == false) | .full_name' | sort -u)"
+
+          if [ -z "$repositories" ]; then
+            echo "No accessible non-archived repositories were discovered." >&2
+            exit 1
+          fi
+
+          {
+            echo "repositories<<EOF"
+            printf '%s\n' "$repositories" | jq -Rsc 'split("\n") | map(select(length > 0))'
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  scan:
+    name: Scan ${{ matrix.repository }}
+    needs: discover
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        repository: ${{ fromJSON(needs.discover.outputs.repositories) }}
+
+    steps:
+      - name: Checkout repository history
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repository }}
+          token: ${{ secrets.GH_AUDIT_TOKEN }}
+          fetch-depth: 0
+          path: target
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Install auditor
+        run: go install github.com/Arnel-rah/secret-leak/cmd/audit@${AUDITOR_VERSION}
+
+      - name: Scan repository history
+        run: |
+          mkdir -p "reports/${{ matrix.repository }}"
+          audit \
+            --repo target \
+            --no-color \
+            --ci \
+            --fail-on "$FAIL_ON" \
+            --json "reports/${{ matrix.repository }}/audit-report.json" \
+            > "reports/${{ matrix.repository }}/audit-output.txt" 2>&1
+
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-${{ matrix.repository }}
+          path: reports/
+          if-no-files-found: error
+          retention-days: 30
+
+  notify:
+    name: Email audit summary
+    needs: [discover, scan]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download scan reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: audit-*
+          path: reports
+          merge-multiple: true
+
+      - name: Check whether notification is needed
+        id: findings
+        env:
+          FAIL_ON: ${{ env.FAIL_ON }}
+        run: |
+          found=false
+          while IFS= read -r -d '' report; do
+            if jq -e --arg threshold "$FAIL_ON" '
+              def rank:
+                if . == "CRITICAL" then 0
+                elif . == "HIGH" then 1
+                elif . == "MEDIUM" then 2
+                else 3
+                end;
+              any(.[]; (.severity | rank) <= ($threshold | ascii_upcase | rank))
+            ' "$report" >/dev/null; then
+              found=true
+              break
+            fi
+          done < <(find reports -name audit-report.json -print0)
+          echo "found=$found" >> "$GITHUB_OUTPUT"
+
+      - name: Send email notification
+        if: steps.findings.outputs.found == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Secret audit findings in ${{ github.repository }}"
+          to: ${{ vars.ALERT_EMAIL }}
+          from: ${{ secrets.SMTP_USERNAME }}
+          body: |
+            The scheduled secret audit found one or more findings at or above
+            the "${{ env.FAIL_ON }}" severity threshold.
+
+            Review the redacted reports in the workflow artifacts:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
